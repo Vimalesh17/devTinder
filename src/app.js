@@ -1,22 +1,34 @@
 import express from 'express';
 import { adminAuth,userAuth} from './middleware/auth.js'
+import { connectDb } from './config/database.js';
+import { userModel } from './models/user.js';
 
 const app = express();
+const dbConnection = async () => {
+    try {
+        await connectDb();
+        console.log("Database connected successfully");
+        app.listen(7777, () => {
+            console.log("app is listening on PORT :7777");
+        });
+    } catch (error) {
+        console.error("Database connection failed:", error);
+    }
+}
 
-app.use("/admin",adminAuth)
+app.post("/signup",async(req,res)=>{
+    const user = new userModel({
+        firstName:'vignesh',
+        lastName:'Panneer',
+        email:'vicky@gmail.com',
+        password:'admin@1234',
+        age:33,
+        gender:'male'
+    })
 
-app.get("/admin/getAllData",(req,res,next)=>{
-  res.send("Fetch all admin data")
- })
-   
-   app.delete("/admin/deleteUser",(req,res,next)=>{
-  res.send("Delete users data")
-   })
+    await user.save()
+    res.send("User added successfully")
 
-app.get("/users",userAuth,(req,res,next)=>{
-
-throw new Error("Something went wrong")
-  res.send("Fetch all users data")
 })
 
 // Error handling middleware
@@ -25,6 +37,4 @@ app.use('/', (err, req, res, next) => {
     res.status(500).send('Internal Server Error')
 })
 
-app.listen(7777,()=>{
-console.log("app is listening on PORT :7777")
-})
+dbConnection()
