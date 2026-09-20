@@ -17,7 +17,9 @@ const dbConnection = async () => {
 }
 
 app.post("/signup",async(req,res)=>{
-    const user = new userModel({
+
+    try{
+const user = new userModel({
         firstName:'vignesh',
         lastName:'Panneer',
         email:'vicky@gmail.com',
@@ -28,6 +30,11 @@ app.post("/signup",async(req,res)=>{
 
     await user.save()
     res.send("User added successfully")
+    }catch(error){
+        console.error(error.message)
+        res.status(500).send("Something went wrong")
+    }
+    
 
 })
 
