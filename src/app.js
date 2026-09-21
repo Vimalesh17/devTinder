@@ -58,6 +58,52 @@ app.get("/feed", async (req, res) => {
     }
 });
 
+app.delete("/user", async (req, res) => {
+    try {
+        const userId = req.body.userId;
+        const userDetail = await userModel.findByIdAndDelete(userId);
+        if (!userDetail) {
+            res.status(404).send("User is Not found");
+        } else {
+            res.send("User Details deleted  Successfully");
+        }
+    } catch (error) {
+        res.status(500).send("Something went wrong");
+    }
+});
+
+// app.patch("/user", async (req, res) => {
+//     try {
+//         const { userId, data } = req.body;
+
+//         const userDetail = await userModel.findOneAndUpdate(userId, data);
+//         if (!userDetail) {
+//             res.status(404).send("User is Not found");
+//         } else {
+//             res.send("User Details updated  Successfully");
+//         }
+//     } catch (error) {
+//         console.log("ERROR:", error);
+//         res.status(500).send("Something went wrong");
+//     }
+// });
+
+app.patch("/user", async (req, res) => {
+    try {
+        const { userId, ...data } = req.body;
+
+        const userDetail = await userModel.findByIdAndUpdate(userId, data);
+        if (!userDetail) {
+            res.status(404).send("User is Not found");
+        } else {
+            res.send("User Details updated  Successfully");
+        }
+    } catch (error) {
+        console.log("ERROR:", error);
+        res.status(500).send("Something went wrong");
+    }
+});
+
 // Error handling middleware
 app.use("/", (err, req, res, next) => {
     console.error(err.stack);
