@@ -3,7 +3,8 @@ import { adminAuth, userAuth } from "./middleware/auth.js";
 import { connectDb } from "./config/database.js";
 import { userModel } from "./models/user.js";
 import mongoose from "mongoose";
-
+import { validateSignupData } from "./utils/validate.js";
+import bcrypt from "bcrypt";
 const app = express();
 
 const dbConnection = async () => {
@@ -22,13 +23,40 @@ app.use(express.json());
 
 app.post("/signup", async (req, res) => {
     try {
-        const user = new userModel(req.body);
+        validateSignupData(req);
 
+        const { firstName, lastName, email, password, age, skills, about } =
+            req?.body;
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        const user = new userModel({
+            firstName,
+            lastName,
+            email,
+            password: passwordHash,
+            age,
+            skills,
+            about,
+        });
         await user.save();
         res.send("User added successfully");
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Something went wrong");
+        res.status(400).send("Error: " + error.message);
+    }
+});
+app.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+        res.status(404).send("User is not found");
+    } else {
+        const isPasswordCheck = await bcrypt.compare(password, user?.password);
+        if (isPasswordCheck) {
+            res.send("Login Sucessfully...!");
+        } else {
+            res.status(400).send("Password is Invalid");
+        }
     }
 });
 app.get("/user", async (req, res) => {
@@ -88,11 +116,30 @@ app.delete("/user", async (req, res) => {
 //     }
 // });
 
-app.patch("/user", async (req, res) => {
+app.patch("/user/:userId", async (req, res) => {
     try {
-        const { userId, ...data } = req.body;
-
-        const userDetail = await userModel.findByIdAndUpdate(userId, data);
+        const userId = req.params.userId;
+        console.log("useriddddd", userId);
+        const { ...data } = req.body;
+        const ALLOWED_UPDATES = [
+            "photoUrl",
+            "age",
+            "about",
+            "skills",
+            "gender",
+        ];
+        const isAllowedKeys = Object.keys(data).every((k) =>
+            ALLOWED_UPDATES.includes(k),
+        );
+        if (!isAllowedKeys) {
+            return res.status(400).send("Invalid update field");
+        }
+        if (data?.skills?.length > 10) {
+            throw new Error("10 skills only allowed");
+        }
+        const userDetail = await userModel.findByIdAndUpdate(userId, data, {
+            runValidators: true,
+        });
         if (!userDetail) {
             res.status(404).send("User is Not found");
         } else {
@@ -100,7 +147,7 @@ app.patch("/user", async (req, res) => {
         }
     } catch (error) {
         console.log("ERROR:", error);
-        res.status(500).send("Something went wrong");
+        res.status(400).send("ERROR" + error.message);
     }
 });
 
