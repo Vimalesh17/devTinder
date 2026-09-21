@@ -1,9 +1,11 @@
-import express from 'express';
-import { adminAuth,userAuth} from './middleware/auth.js'
-import { connectDb } from './config/database.js';
-import { userModel } from './models/user.js';
+import express from "express";
+import { adminAuth, userAuth } from "./middleware/auth.js";
+import { connectDb } from "./config/database.js";
+import { userModel } from "./models/user.js";
+import mongoose from "mongoose";
 
 const app = express();
+
 const dbConnection = async () => {
     try {
         await connectDb();
@@ -14,34 +16,52 @@ const dbConnection = async () => {
     } catch (error) {
         console.error("Database connection failed:", error);
     }
-}
+};
 
-app.post("/signup",async(req,res)=>{
+app.use(express.json());
 
-    try{
-const user = new userModel({
-        firstName:'vignesh',
-        lastName:'Panneer',
-        email:'vicky@gmail.com',
-        password:'admin@1234',
-        age:33,
-        gender:'male'
-    })
+app.post("/signup", async (req, res) => {
+    try {
+        const user = new userModel(req.body);
 
-    await user.save()
-    res.send("User added successfully")
-    }catch(error){
-        console.error(error.message)
-        res.status(500).send("Something went wrong")
+        await user.save();
+        res.send("User added successfully");
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Something went wrong");
     }
-    
+});
+app.get("/user", async (req, res) => {
+    try {
+        const userEmail = req.body.email;
+        const userDetail = await userModel.find({ email: userEmail });
+        if (userDetail?.length === 0) {
+            res.status(404).send("User not found");
+        } else {
+            res.send(userDetail);
+        }
+    } catch (error) {
+        res.statusCode(500).send("Something went wrong");
+    }
+});
 
-})
+app.get("/feed", async (req, res) => {
+    try {
+        const userDetail = await userModel.find({});
+        if (userDetail?.length === 0) {
+            res.status(404).send("User not found");
+        } else {
+            res.send(userDetail);
+        }
+    } catch (error) {
+        res.statusCode(500).send("Something went wrong");
+    }
+});
 
 // Error handling middleware
-app.use('/', (err, req, res, next) => {
-    console.error(err.stack)
-    res.status(500).send('Internal Server Error')
-})
+app.use("/", (err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send("Internal Server Error");
+});
 
-dbConnection()
+dbConnection();
