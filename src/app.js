@@ -1,10 +1,10 @@
 import express from "express";
-import { adminAuth, userAuth } from "./middleware/auth.js";
+import { userAuth } from "./middleware/auth.js";
 import { connectDb } from "./config/database.js";
 import { userModel } from "./models/user.js";
-import mongoose from "mongoose";
 import { validateSignupData } from "./utils/validate.js";
 import bcrypt from "bcrypt";
+import cookieParser from "cookie-parser";
 const app = express();
 
 const dbConnection = async () => {
@@ -20,6 +20,7 @@ const dbConnection = async () => {
 };
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
     try {
@@ -51,106 +52,28 @@ app.post("/login", async (req, res) => {
     if (!user) {
         res.status(404).send("User is not found");
     } else {
-        const isPasswordCheck = await bcrypt.compare(password, user?.password);
+        const isPasswordCheck = await user.validatePassword(password);
         if (isPasswordCheck) {
+            const token = await user.getJwt();
+            res.cookie("token", token, {
+                expires: new Date(Date.now() + 8 * 3600000),
+            });
             res.send("Login Sucessfully...!");
         } else {
             res.status(400).send("Password is Invalid");
         }
     }
 });
-app.get("/user", async (req, res) => {
-    try {
-        const userEmail = req.body.email;
-        const userDetail = await userModel.find({ email: userEmail });
-        if (userDetail?.length === 0) {
-            res.status(404).send("User not found");
-        } else {
-            res.send(userDetail);
-        }
-    } catch (error) {
-        res.statusCode(500).send("Something went wrong");
-    }
+
+app.get("/profile", userAuth, (req, res) => {
+    const user = req.user;
+    res.send(user);
 });
 
-app.get("/feed", async (req, res) => {
-    try {
-        const userDetail = await userModel.find({});
-        if (userDetail?.length === 0) {
-            res.status(404).send("User not found");
-        } else {
-            res.send(userDetail);
-        }
-    } catch (error) {
-        res.statusCode(500).send("Something went wrong");
-    }
+app.post("/sendRequestConnection", userAuth, (req, res) => {
+    const user = req.user;
+    res.send(user.firstName + " sent to request connection");
 });
-
-app.delete("/user", async (req, res) => {
-    try {
-        const userId = req.body.userId;
-        const userDetail = await userModel.findByIdAndDelete(userId);
-        if (!userDetail) {
-            res.status(404).send("User is Not found");
-        } else {
-            res.send("User Details deleted  Successfully");
-        }
-    } catch (error) {
-        res.status(500).send("Something went wrong");
-    }
-});
-
-// app.patch("/user", async (req, res) => {
-//     try {
-//         const { userId, data } = req.body;
-
-//         const userDetail = await userModel.findOneAndUpdate(userId, data);
-//         if (!userDetail) {
-//             res.status(404).send("User is Not found");
-//         } else {
-//             res.send("User Details updated  Successfully");
-//         }
-//     } catch (error) {
-//         console.log("ERROR:", error);
-//         res.status(500).send("Something went wrong");
-//     }
-// });
-
-app.patch("/user/:userId", async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        console.log("useriddddd", userId);
-        const { ...data } = req.body;
-        const ALLOWED_UPDATES = [
-            "photoUrl",
-            "age",
-            "about",
-            "skills",
-            "gender",
-        ];
-        const isAllowedKeys = Object.keys(data).every((k) =>
-            ALLOWED_UPDATES.includes(k),
-        );
-        if (!isAllowedKeys) {
-            return res.status(400).send("Invalid update field");
-        }
-        if (data?.skills?.length > 10) {
-            throw new Error("10 skills only allowed");
-        }
-        const userDetail = await userModel.findByIdAndUpdate(userId, data, {
-            runValidators: true,
-        });
-        if (!userDetail) {
-            res.status(404).send("User is Not found");
-        } else {
-            res.send("User Details updated  Successfully");
-        }
-    } catch (error) {
-        console.log("ERROR:", error);
-        res.status(400).send("ERROR" + error.message);
-    }
-});
-
 // Error handling middleware
 app.use("/", (err, req, res, next) => {
     console.error(err.stack);
