@@ -22,3 +22,37 @@ export const validateSignupData = (req) => {
         throw new Error("Strong Password is required");
     }
 };
+
+export const validateEditProfileData = (req) => {
+    const ALLOWED_UPDATES = [
+        "firstName",
+        "lastName",
+        "age",
+        "gender",
+        "about",
+        "skills",
+        "photoUrl",
+        "email",
+    ];
+    const isAllowUpdate = Object.keys(req.body).every((fields) =>
+        ALLOWED_UPDATES.includes(fields),
+    );
+    return isAllowUpdate;
+};
+
+export const validateUpdatePassword = (req) => {
+    const ALLOWED_UPDATES = ["currentPassword", "newPassword"];
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword) {
+        throw new Error("New Password is required");
+    }
+    if (!newPassword) {
+        throw new Error("New Password is required");
+    } else if (!validator.isStrongPassword(newPassword)) {
+        throw new Error("Strong Password is required");
+    }
+    const isAllowUpdate = Object.keys(req.body).every((fields) =>
+        ALLOWED_UPDATES.includes(fields),
+    );
+    return isAllowUpdate;
+};
