@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
 const userSchema = new mongoose.Schema(
     {
         firstName: {
@@ -81,6 +81,7 @@ const userSchema = new mongoose.Schema(
     },
 );
 
+userSchema.index({ firstName: 1, lastName: 1 });
 userSchema.methods.getJwt = async function () {
     const user = this;
     const token = await jwt.sign({ _id: user._id }, "VIMALESH@17", {
