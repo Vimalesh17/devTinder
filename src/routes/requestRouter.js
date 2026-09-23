@@ -60,3 +60,39 @@ requestRoute.post(
         }
     },
 );
+requestRoute.post(
+    "/request/review/:status/:requestId",
+    userAuth,
+    async (req, res) => {
+        try {
+            const requestId = req.params.requestId;
+            const status = req.params.status;
+
+            const ALLOWED_REQ_STATUS = ["accepted", "rejected"];
+            const isAllowedReqStatus = ALLOWED_REQ_STATUS.includes(status);
+
+            if (!isAllowedReqStatus) {
+                throw new Error("Invalid Request Status");
+            }
+            const loggedInUser = req.user;
+            const connectionRequest = await ConnectionRequest.findOne({
+                _id: requestId,
+                toUserId: loggedInUser._id,
+                status: "interested",
+            });
+            console.log(connectionRequest);
+
+            if (!connectionRequest) {
+                return res.status(404).send("Connection Request is not found");
+            }
+            connectionRequest.status = status;
+            const data = await connectionRequest.save();
+            res.json({
+                message: `Connection request is ${status}`,
+                data,
+            });
+        } catch (error) {
+            res.status(400).send("Error: " + error.message);
+        }
+    },
+);
