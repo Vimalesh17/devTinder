@@ -61,7 +61,7 @@ authRoute.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await userModel.findOne({ email: email });
     if (!user) {
-        res.status(404).send("User is not found");
+        res.status(400).send("Email is not a Registered");
     } else {
         const isPasswordCheck = await user.validatePassword(password);
         if (isPasswordCheck) {
