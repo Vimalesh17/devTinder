@@ -38,7 +38,7 @@ authRoute.post("/signup", async (req, res) => {
             {
                 _id: data._id,
             },
-            JWT_SECRET,
+            "VIMALESH@17",
             {
                 expiresIn: "8h",
             },
@@ -69,7 +69,7 @@ authRoute.post("/login", async (req, res) => {
                 {
                     _id: user._id,
                 },
-                JWT_SECRET,
+                "VIMALESH@17",
                 {
                     expiresIn: "8h",
                 },
