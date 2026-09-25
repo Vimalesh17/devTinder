@@ -18,9 +18,6 @@ userRoute.get("/user/requests/received", userAuth, async (req, res) => {
             "about",
             "photoUrl",
         ]);
-        if (!connectionRequests) {
-            res.status(404).json({ message: "No request received" });
-        }
         res.json({
             message: "Connection requests are fetched successfully...!",
             data: connectionRequests,
@@ -56,14 +53,6 @@ userRoute.get("/user/connections", userAuth, async (req, res) => {
         })
             .populate("fromUserId", USER_SAFE_DATA)
             .populate("toUserId", USER_SAFE_DATA);
-
-        if (connectionRequests.length === 0) {
-            return res.status(404).json({
-                message: "No connections found",
-                data: [],
-            });
-        }
-
         const data = connectionRequests.map((row) => {
             if (row.toUserId._id.toString() === loggedInUser._id.toString()) {
                 return row.fromUserId;

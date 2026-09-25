@@ -5,6 +5,7 @@ import { authRoute } from "./routes/authRoute.js";
 import { profileRoute } from "./routes/profileRoute.js";
 import { requestRoute } from "./routes/requestRouter.js";
 import { userRoute } from "./routes/userRoute.js";
+import cors from "cors";
 
 const app = express();
 
@@ -19,13 +20,18 @@ const dbConnection = async () => {
         console.error("Database connection failed:", error);
     }
 };
-
+app.use(
+    cors({
+        origin: "http://localhost:5173",
+        credentials: true,
+    }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/",authRoute)
-app.use("/",profileRoute)
-app.use("/",requestRoute)
-app.use("/",userRoute)
+app.use("/", authRoute);
+app.use("/", profileRoute);
+app.use("/", requestRoute);
+app.use("/", userRoute);
 
 dbConnection();

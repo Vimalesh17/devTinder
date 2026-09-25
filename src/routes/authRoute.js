@@ -14,6 +14,13 @@ authRoute.post("/signup", async (req, res) => {
         const { firstName, lastName, email, password, age, skills, about } =
             req?.body;
 
+        const existingUser = await userModel.findOne({ email });
+
+        if (existingUser) {
+            return res.status(409).json({
+                message: "Email is already registered",
+            });
+        }
         const passwordHash = await bcrypt.hash(password, 10);
         const user = new userModel({
             firstName,
@@ -24,15 +31,30 @@ authRoute.post("/signup", async (req, res) => {
             skills,
             about,
         });
-        await user.save();
-        res.send("User added successfully");
+
+        const data = await user.save();
+        const token = jwt.sign(
+            {
+                _id: data._id,
+            },
+            JWT_SECRET,
+            {
+                expiresIn: "8h",
+            },
+        );
+        res.cookie("token", token, {
+            httpOnly: true,
+            maxAge: 8 * 60 * 60 * 1000, // 8 hours
+            sameSite: "lax",
+            secure: false, // true in production with HTTPS
+        });
+
+        res.json({ message: "User added successfully", data });
     } catch (error) {
         console.error(error.message);
         res.status(400).send("Error: " + error.message);
     }
 });
-
-// login
 
 authRoute.post("/login", async (req, res) => {
     const { email, password } = req.body;
@@ -42,22 +64,38 @@ authRoute.post("/login", async (req, res) => {
     } else {
         const isPasswordCheck = await user.validatePassword(password);
         if (isPasswordCheck) {
-            const token = await user.getJwt();
+            const token = jwt.sign(
+                {
+                    _id: user._id,
+                },
+                JWT_SECRET,
+                {
+                    expiresIn: "8h",
+                },
+            );
             res.cookie("token", token, {
-                expires: new Date(Date.now() + 8 * 3600000),
+                httpOnly: true,
+                maxAge: 8 * 60 * 60 * 1000,
+                sameSite: "lax",
+                secure: false,
             });
-            res.send("Login Sucessfully...!");
+            res.json({
+                message: "Login Successfully",
+                data: user,
+            });
         } else {
             res.status(400).send("Password is Invalid");
         }
     }
 });
 
-// logout
 authRoute.post("/logout", async (req, res) => {
     try {
-        res.cookie("token", null, {
-            expires: new Date(Date.now()),
+        res.cookie("token", "", {
+            httpOnly: true,
+            expires: new Date(0),
+            sameSite: "lax",
+            secure: false,
         });
         res.send("Logout sucessfully...!");
     } catch (error) {
