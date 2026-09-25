@@ -2,6 +2,7 @@ import express from "express";
 import { validateSignupData } from "../utils/validate.js";
 import { userModel } from "../models/user.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const authRoute = express.Router();
 
